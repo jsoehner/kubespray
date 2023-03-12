@@ -10,6 +10,7 @@ Vagrant.require_version ">= 2.0.0"
 CONFIG = File.join(File.dirname(__FILE__), ENV['KUBESPRAY_VAGRANT_CONFIG'] || 'vagrant/config.rb')
 
 FLATCAR_URL_TEMPLATE = "https://%s.release.flatcar-linux.net/amd64-usr/current/flatcar_production_vagrant.json"
+FEDORA35_MIRROR = "https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/Fedora-Cloud-Base-Vagrant-35-1.2.x86_64.vagrant-libvirt.box"
 
 # Uniq disk UUID for libvirt
 DISK_UUID = Time.now.utc.to_i
@@ -29,9 +30,9 @@ SUPPORTED_OS = {
   "almalinux8"          => {box: "almalinux/8",                user: "vagrant"},
   "almalinux8-bento"    => {box: "bento/almalinux-8",          user: "vagrant"},
   "rockylinux8"         => {box: "generic/rocky8",             user: "vagrant"},
-  "fedora35"            => {box: "fedora/35-cloud-base",       user: "vagrant"},
+  "fedora35"            => {box: "fedora/35-cloud-base",       user: "vagrant", box_url: FEDORA35_MIRROR},
   "fedora36"            => {box: "fedora/36-cloud-base",       user: "vagrant"},
-  "opensuse"            => {box: "opensuse/Leap-15.3.x86_64",  user: "vagrant"},
+  "opensuse"            => {box: "opensuse/Leap-15.4.x86_64",  user: "vagrant"},
   "opensuse-tumbleweed" => {box: "opensuse/Tumbleweed.x86_64", user: "vagrant"},
   "oraclelinux"         => {box: "generic/oracle7",            user: "vagrant"},
   "oraclelinux8"        => {box: "generic/oracle8",            user: "vagrant"},
@@ -55,7 +56,7 @@ $subnet ||= "172.18.8"
 $subnet_ipv6 ||= "fd3c:b398:0698:0756"
 $os ||= "ubuntu1804"
 $network_plugin ||= "flannel"
-# Setting multi_networking to true will install Multus: https://github.com/intel/multus-cni
+# Setting multi_networking to true will install Multus: https://github.com/k8snetworkplumbingwg/multus-cni
 $multi_networking ||= "False"
 $download_run_once ||= "True"
 $download_force_cache ||= "False"

@@ -12,6 +12,7 @@ contrib/offline/offline-files.tar.gz
 *.bak
 *.tfstate
 *.tfstate.backup
+*.lock.hcl
 .terraform/
 contrib/terraform/aws/credentials.tfvars
 .terraform.lock.hcl
@@ -112,3 +113,4 @@ roles/**/molecule/**/__pycache__/
 
 # Temp location used by our scripts
 scripts/tmp/
+tmp.md
