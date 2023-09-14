@@ -113,7 +113,7 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/mast
 
 This example creates an ELB with just two listeners, one in port 80 and another in port 443
 
-![Listeners](https://github.com/kubernetes/ingress-nginx/raw/master/docs/images/elb-l7-listener.png)
+![Listeners](https://github.com/kubernetes/ingress-nginx/blob/main/docs/images/elb-l7-listener.png)
 
 ##### ELB Idle Timeouts
 
@@ -159,7 +159,7 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main
 ```
 
 !!! tip
-    For extended notes regarding deployments on bare-metal, see [Bare-metal considerations](./baremetal.md).
+    For extended notes regarding deployments on bare-metal, see [Bare-metal considerations](https://github.com/kubernetes/ingress-nginx/blob/main/docs/deploy/baremetal.md).
 
 ### Verify installation
 

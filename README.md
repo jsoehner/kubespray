@@ -34,6 +34,13 @@ CONFIG_FILE=inventory/mycluster/hosts.yaml python3 contrib/inventory_builder/inv
 cat inventory/mycluster/group_vars/all/all.yml
 cat inventory/mycluster/group_vars/k8s_cluster/k8s-cluster.yml
 
+# Clean up old Kubernetes cluster with Ansible Playbook - run the playbook as root
+# The option `--become` is required, as for example cleaning up SSL keys in /etc/,
+# uninstalling old packages and interacting with various systemd daemons.
+# Without --become the playbook will fail to run!
+# And be mind it will remove the current kubernetes cluster (if it's running)!
+ansible-playbook -i inventory/mycluster/hosts.yaml  --become --become-user=root reset.yml
+
 # Deploy Kubespray with Ansible Playbook - run the playbook as root
 # The option `--become` is required, as for example writing SSL keys in /etc/,
 # installing packages and interacting with various systemd daemons.
@@ -68,14 +75,18 @@ You will then need to use [bind mounts](https://docs.docker.com/storage/bind-mou
 to access the inventory and SSH key in the container, like this:
 
 ```ShellSession
-git checkout v2.21.0
-docker pull quay.io/kubespray/kubespray:v2.21.0
+git checkout v2.23.0
+docker pull quay.io/kubespray/kubespray:v2.23.0
 docker run --rm -it --mount type=bind,source="$(pwd)"/inventory/sample,dst=/inventory \
   --mount type=bind,source="${HOME}"/.ssh/id_rsa,dst=/root/.ssh/id_rsa \
-  quay.io/kubespray/kubespray:v2.21.0 bash
+  quay.io/kubespray/kubespray:v2.23.0 bash
 # Inside the container you may now run the kubespray playbooks:
 ansible-playbook -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa cluster.yml
 ```
+
+#### Collection
+
+See [here](docs/ansible_collection.md) if you wish to use this repository as an Ansible collection
 
 ### Vagrant
 
@@ -131,10 +142,10 @@ vagrant up
 ## Supported Linux Distributions
 
 - **Flatcar Container Linux by Kinvolk**
-- **Debian** Bullseye, Buster, Jessie, Stretch
-- **Ubuntu** 16.04, 18.04, 20.04, 22.04
+- **Debian** Bookworm, Bullseye, Buster
+- **Ubuntu** 20.04, 22.04
 - **CentOS/RHEL** 7, [8, 9](docs/centos.md#centos-8)
-- **Fedora** 35, 36
+- **Fedora** 37, 38
 - **Fedora CoreOS** (see [fcos Note](docs/fcos.md))
 - **openSUSE** Leap 15.x/Tumbleweed
 - **Oracle Linux** 7, [8, 9](docs/centos.md#centos-8)
@@ -150,30 +161,29 @@ Note: Upstart/SysV init based OS types are not supported.
 ## Supported Components
 
 - Core
-  - [kubernetes](https://github.com/kubernetes/kubernetes) v1.26.2
-  - [etcd](https://github.com/etcd-io/etcd) v3.5.6
+  - [kubernetes](https://github.com/kubernetes/kubernetes) v1.28.1
+  - [etcd](https://github.com/etcd-io/etcd) v3.5.7
   - [docker](https://www.docker.com/) v20.10 (see note)
-  - [containerd](https://containerd.io/) v1.6.19
-  - [cri-o](http://cri-o.io/) v1.24 (experimental: see [CRI-O Note](docs/cri-o.md). Only on fedora, ubuntu and centos based OS)
+  - [containerd](https://containerd.io/) v1.7.5
+  - [cri-o](http://cri-o.io/) v1.27 (experimental: see [CRI-O Note](docs/cri-o.md). Only on fedora, ubuntu and centos based OS)
 - Network Plugin
   - [cni-plugins](https://github.com/containernetworking/plugins) v1.2.0
-  - [calico](https://github.com/projectcalico/calico) v3.25.0
-  - [canal](https://github.com/projectcalico/canal) (given calico/flannel versions)
-  - [cilium](https://github.com/cilium/cilium) v1.12.1
-  - [flannel](https://github.com/flannel-io/flannel) v0.20.2
-  - [kube-ovn](https://github.com/alauda/kube-ovn) v1.10.7
+  - [calico](https://github.com/projectcalico/calico) v3.25.2
+  - [cilium](https://github.com/cilium/cilium) v1.13.4
+  - [flannel](https://github.com/flannel-io/flannel) v0.22.0
+  - [kube-ovn](https://github.com/alauda/kube-ovn) v1.11.5
   - [kube-router](https://github.com/cloudnativelabs/kube-router) v1.5.1
   - [multus](https://github.com/k8snetworkplumbingwg/multus-cni) v3.8
   - [weave](https://github.com/weaveworks/weave) v2.8.1
-  - [kube-vip](https://github.com/kube-vip/kube-vip) v0.5.11
+  - [kube-vip](https://github.com/kube-vip/kube-vip) v0.5.12
 - Application
-  - [cert-manager](https://github.com/jetstack/cert-manager) v1.11.0
-  - [coredns](https://github.com/coredns/coredns) v1.9.3
-  - [ingress-nginx](https://github.com/kubernetes/ingress-nginx) v1.6.4
-  - [krew](https://github.com/kubernetes-sigs/krew) v0.4.3
-  - [argocd](https://argoproj.github.io/) v2.6.3
-  - [helm](https://helm.sh/) v3.11.1
-  - [metallb](https://metallb.universe.tf/)  v0.12.1
+  - [cert-manager](https://github.com/jetstack/cert-manager) v1.11.1
+  - [coredns](https://github.com/coredns/coredns) v1.10.1
+  - [ingress-nginx](https://github.com/kubernetes/ingress-nginx) v1.8.1
+  - [krew](https://github.com/kubernetes-sigs/krew) v0.4.4
+  - [argocd](https://argoproj.github.io/) v2.8.0
+  - [helm](https://helm.sh/) v3.12.3
+  - [metallb](https://metallb.universe.tf/)  v0.13.9
   - [registry](https://github.com/distribution/distribution) v2.8.1
 - Storage Plugin
   - [cephfs-provisioner](https://github.com/kubernetes-incubator/external-storage) v2.1.0-k8s1.11
@@ -181,19 +191,19 @@ Note: Upstart/SysV init based OS types are not supported.
   - [aws-ebs-csi-plugin](https://github.com/kubernetes-sigs/aws-ebs-csi-driver) v0.5.0
   - [azure-csi-plugin](https://github.com/kubernetes-sigs/azuredisk-csi-driver) v1.10.0
   - [cinder-csi-plugin](https://github.com/kubernetes/cloud-provider-openstack/blob/master/docs/cinder-csi-plugin/using-cinder-csi-plugin.md) v1.22.0
-  - [gcp-pd-csi-plugin](https://github.com/kubernetes-sigs/gcp-compute-persistent-disk-csi-driver) v1.4.0
-  - [local-path-provisioner](https://github.com/rancher/local-path-provisioner) v0.0.23
+  - [gcp-pd-csi-plugin](https://github.com/kubernetes-sigs/gcp-compute-persistent-disk-csi-driver) v1.9.2
+  - [local-path-provisioner](https://github.com/rancher/local-path-provisioner) v0.0.24
   - [local-volume-provisioner](https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner) v2.5.0
 
 ## Container Runtime Notes
 
-- Supported Docker versions are 18.09, 19.03 and 20.10. The *recommended* Docker version is 20.10. `Kubelet` might break on docker's non-standard version numbering (it no longer uses semantic versioning). To ensure auto-updates don't break your cluster look into e.g. the YUM  ``versionlock`` plugin or ``apt pin``).
+- Supported Docker versions are 18.09, 19.03, 20.10, 23.0 and 24.0. The *recommended* Docker version is 20.10 (except on Debian bookworm which without supporting for 20.10 and below any more). `Kubelet` might break on docker's non-standard version numbering (it no longer uses semantic versioning). To ensure auto-updates don't break your cluster look into e.g. the YUM  ``versionlock`` plugin or ``apt pin``).
 - The cri-o version should be aligned with the respective kubernetes version (i.e. kube_version=1.20.x, crio_version=1.20)
 
 ## Requirements
 
-- **Minimum required version of Kubernetes is v1.24**
-- **Ansible v2.11+, Jinja 2.11+ and python-netaddr is installed on the machine that will run Ansible commands**
+- **Minimum required version of Kubernetes is v1.26**
+- **Ansible v2.14+, Jinja 2.11+ and python-netaddr is installed on the machine that will run Ansible commands**
 - The target servers must have **access to the Internet** in order to pull docker images. Otherwise, additional configuration is required (See [Offline Environment](docs/offline-environment.md))
 - The target servers are configured to allow **IPv4 forwarding**.
 - If using IPv6 for pods and services, the target servers are configured to allow **IPv6 forwarding**.
@@ -217,12 +227,10 @@ You can choose among ten network plugins. (default: `calico`, except Vagrant use
 
 - [flannel](docs/flannel.md): gre/vxlan (layer 2) networking.
 
-- [Calico](https://docs.projectcalico.org/latest/introduction/) is a networking and network policy provider. Calico supports a flexible set of networking options
+- [Calico](https://docs.tigera.io/calico/latest/about/) is a networking and network policy provider. Calico supports a flexible set of networking options
     designed to give you the most efficient networking across a range of situations, including non-overlay
     and overlay networks, with or without BGP. Calico uses the same engine to enforce network policy for hosts,
     pods, and (if using Istio and Envoy) applications at the service mesh layer.
-
-- [canal](https://github.com/projectcalico/canal): a composition of calico and flannel plugins.
 
 - [cilium](http://docs.cilium.io/en/latest/): layer 3/4 networking (as well as layer 7 to protect and secure application protocols), supports dynamic insertion of BPF bytecode into the Linux kernel to implement security services, networking and visibility logic.
 
@@ -239,6 +247,9 @@ You can choose among ten network plugins. (default: `calico`, except Vagrant use
 - [macvlan](docs/macvlan.md): Macvlan is a Linux network driver. Pods have their own unique Mac and Ip address, connected directly the physical (layer 2) network.
 
 - [multus](docs/multus.md): Multus is a meta CNI plugin that provides multiple network interface support to pods. For each interface Multus delegates CNI calls to secondary CNI plugins such as Calico, macvlan, etc.
+
+- [custom_cni](roles/network-plugin/custom_cni/) : You can specify some manifests that will be applied to the clusters to bring you own CNI and use non-supported ones by Kubespray.
+  See `tests/files/custom_cni/README.md` and `tests/files/custom_cni/values.yaml`for an example with a CNI provided by a Helm Chart.
 
 The network plugin to use is defined by the variable `kube_network_plugin`. There is also an
 option to leverage built-in cloud provider networking instead.
@@ -265,7 +276,7 @@ See also [Network checker](docs/netcheck.md).
 
 ## CI Tests
 
-[![Build graphs](https://gitlab.com/kargo-ci/kubernetes-sigs-kubespray/badges/master/pipeline.svg)](https://gitlab.com/kargo-ci/kubernetes-sigs-kubespray/pipelines)
+[![Build graphs](https://gitlab.com/kargo-ci/kubernetes-sigs-kubespray/badges/master/pipeline.svg)](https://gitlab.com/kargo-ci/kubernetes-sigs-kubespray/-/pipelines)
 
 CI/end-to-end tests sponsored by: [CNCF](https://cncf.io), [Equinix Metal](https://metal.equinix.com/), [OVHcloud](https://www.ovhcloud.com/), [ELASTX](https://elastx.se/).
 
