@@ -102,7 +102,6 @@ loadbalancer_apiserver_pod_name: "{% if loadbalancer_apiserver_type == 'nginx' %
 #   - extensions/v1beta1/deployments=true
 #   - extensions/v1beta1/replicasets=true
 #   - extensions/v1beta1/networkpolicies=true
-#   - extensions/v1beta1/podsecuritypolicies=true
 
 # A port range to reserve for services with NodePort visibility.
 # Inclusive at both ends of the range.
@@ -240,3 +239,16 @@ azure_cloud: AzurePublicCloud
 #   - TLS_RSA_WITH_AES_256_CBC_SHA
 #   - TLS_RSA_WITH_AES_256_GCM_SHA384
 #   - TLS_RSA_WITH_RC4_128_SHA
+
+kube_proxy_ipvs_modules:
+  - ip_vs
+  - ip_vs_rr
+  - ip_vs_wrr
+  - ip_vs_sh
+  - ip_vs_wlc
+  - ip_vs_lc
+
+# Kubespray will use the first module of this list which it can successfully modprobe
+conntrack_modules:
+  - nf_conntrack
+  - nf_conntrack_ipv4
