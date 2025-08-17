@@ -2,7 +2,7 @@
 - name: Collect debug info
   hosts: all
   become: true
-  gather_facts: no
+  gather_facts: false
 
   vars:
     docker_bin_dir: /usr/bin
@@ -41,12 +41,6 @@
       - name: calico_pool_info
         cmd: "{{ bin_dir }}/calicoctl get ippool -o wide"
         when: '{{ kube_network_plugin == "calico" }}'
-      - name: weave_info
-        cmd: weave report
-        when: '{{ kube_network_plugin == "weave" }}'
-      - name: weave_logs
-        cmd: "{{ docker_bin_dir }}/docker logs weave"
-        when: '{{ kube_network_plugin == "weave" }}'
       - name: kube_describe_all
         cmd: "{{ bin_dir }}/kubectl describe all --all-namespaces"
       - name: kube_describe_nodes
@@ -118,7 +112,7 @@
       failed_when: false
       with_items: "{{ commands }}"
       when: item.when | default(True)
-      no_log: True
+      no_log: true
 
     - name: Fetch results
       fetch:
@@ -140,7 +134,7 @@
         path: "/tmp/{{ archive_dirname }}"
         dest: "{{ dir | default('.') }}/logs.tar.gz"
         remove: true
-        mode: 0640
+        mode: "0640"
       delegate_to: localhost
       connection: local
       become: false

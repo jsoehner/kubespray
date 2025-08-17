@@ -1,11 +1,11 @@
 ---
 - name: Collect container images for offline deployment
   hosts: localhost
-  become: no
+  become: false
 
   roles:
     # Just load default variables from roles.
-    - role: kubespray-defaults
+    - role: kubespray_defaults
       when: false
     - role: download
       when: false
@@ -16,7 +16,7 @@
       template:
         src: ./contrib/offline/temp/{{ item }}.list.template
         dest: ./contrib/offline/temp/{{ item }}.list
-        mode: 0644
+        mode: "0644"
       with_items:
         - files
         - images

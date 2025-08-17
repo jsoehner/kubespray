@@ -89,11 +89,15 @@ variable "k8s_node_fips" {
 }
 
 variable "k8s_masters_fips" {
-  type = map
+  type = map(object({
+    address = string
+  }))
 }
 
 variable "k8s_nodes_fips" {
-  type = map
+  type = map(object({
+    address = string
+  }))
 }
 
 variable "bastion_fips" {
@@ -104,7 +108,15 @@ variable "bastion_allowed_remote_ips" {
   type = list
 }
 
+variable "bastion_allowed_remote_ipv6_ips" {
+  type = list
+}
+
 variable "master_allowed_remote_ips" {
+  type = list
+}
+
+variable "master_allowed_remote_ipv6_ips" {
   type = list
 }
 
@@ -112,7 +124,15 @@ variable "k8s_allowed_remote_ips" {
   type = list
 }
 
+variable "k8s_allowed_remote_ips_ipv6" {
+  type = list
+}
+
 variable "k8s_allowed_egress_ips" {
+  type = list
+}
+
+variable "k8s_allowed_egress_ipv6_ips" {
   type = list
 }
 
@@ -120,8 +140,9 @@ variable "k8s_masters" {
   type = map(object({
     az                     = string
     flavor                 = string
-    floating_ip            = bool
     etcd                   = bool
+    floating_ip            = bool
+    reserved_floating_ip   = optional(string)
     image_id               = optional(string)
     root_volume_size_in_gb = optional(number)
     volume_type            = optional(string)
@@ -134,6 +155,7 @@ variable "k8s_nodes" {
     az                     = string
     flavor                 = string
     floating_ip            = bool
+    reserved_floating_ip   = optional(string)
     extra_groups           = optional(string)
     image_id               = optional(string)
     root_volume_size_in_gb = optional(number)
@@ -172,11 +194,23 @@ variable "master_allowed_ports" {
   type = list
 }
 
+variable "master_allowed_ports_ipv6" {
+  type = list
+}
+
 variable "worker_allowed_ports" {
   type = list
 }
 
+variable "worker_allowed_ports_ipv6" {
+  type = list
+}
+
 variable "bastion_allowed_ports" {
+  type = list
+}
+
+variable "bastion_allowed_ports_ipv6" {
   type = list
 }
 

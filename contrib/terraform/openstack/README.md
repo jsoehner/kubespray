@@ -24,6 +24,7 @@ most modern installs of OpenStack that support the basic services.
 - [Ultimum](https://ultimum.io/)
 - [VexxHost](https://vexxhost.com/)
 - [Zetta](https://www.zetta.io/)
+- [Cloudify](https://www.cloudify.ro/en)
 
 ## Approach
 
@@ -59,17 +60,17 @@ You can create many different kubernetes topologies by setting the number of
 different classes of hosts. For each class there are options for allocating
 floating IP addresses or not.
 
-- Master nodes with etcd
-- Master nodes without etcd
+- Control plane nodes with etcd
+- Control plane nodes without etcd
 - Standalone etcd hosts
 - Kubernetes worker nodes
 
 Note that the Ansible script will report an invalid configuration if you wind up
 with an even number of etcd instances since that is not a valid configuration. This
 restriction includes standalone etcd nodes that are deployed in a cluster along with
-master nodes with etcd replicas. As an example, if you have three master nodes with
-etcd replicas and three standalone etcd nodes, the script will fail since there are
-now six total etcd replicas.
+control plane nodes with etcd replicas. As an example, if you have three control plane
+nodes with etcd replicas and three standalone etcd nodes, the script will fail since
+there are now six total etcd replicas.
 
 ### GlusterFS shared file system
 
@@ -97,9 +98,10 @@ binaries available on hyperkube v1.4.3_coreos.0 or higher.
 
 ## Module Architecture
 
-The configuration is divided into three modules:
+The configuration is divided into four modules:
 
 - Network
+- Loadbalancer
 - IPs
 - Compute
 
@@ -256,7 +258,8 @@ For your cluster, edit `inventory/$CLUSTER/cluster.tfvars`.
 |`bastion_fips` | A list of floating IPs that you have already pre-allocated; they will be attached to bastion node instead of creating new random floating IPs. |
 |`external_net` | UUID of the external network that will be routed to |
 |`flavor_k8s_master`,`flavor_k8s_node`,`flavor_etcd`, `flavor_bastion`,`flavor_gfs_node` | Flavor depends on your openstack installation, you can get available flavor IDs through `openstack flavor list` |
-|`image`,`image_gfs` | Name of the image to use in provisioning the compute resources. Should already be loaded into glance. |
+|`image`,`image_gfs`, `image_master` | Name of the image to use in provisioning the compute resources. Should already be loaded into glance. |
+|`image_uuid`,`image_gfs_uuid`, `image_master_uuid` | UUID of the image to use in provisioning the compute resources. Should already be loaded into glance. |
 |`ssh_user`,`ssh_user_gfs` | The username to ssh into the image with. This usually depends on the image you have selected |
 |`public_key_path` | Path on your local workstation to the public key file you wish to use in creating the key pairs |
 |`number_of_k8s_masters`, `number_of_k8s_masters_no_floating_ip` | Number of nodes that serve as both master and etcd. These can be provisioned with or without floating IP addresses|
@@ -269,11 +272,18 @@ For your cluster, edit `inventory/$CLUSTER/cluster.tfvars`.
 |`supplementary_master_groups` | To add ansible groups to the masters, such as `kube_node` for tainting them as nodes, empty by default. |
 |`supplementary_node_groups` | To add ansible groups to the nodes, such as `kube_ingress` for running ingress controller pods, empty by default. |
 |`bastion_allowed_remote_ips` | List of CIDR allowed to initiate a SSH connection, `["0.0.0.0/0"]` by default |
+|`bastion_allowed_remote_ipv6_ips` | List of IPv6 CIDR allowed to initiate a SSH connection, `["::/0"]` by default |
 |`master_allowed_remote_ips` | List of CIDR blocks allowed to initiate an API connection, `["0.0.0.0/0"]` by default |
+|`master_allowed_remote_ipv6_ips` | List of IPv6 CIDR blocks allowed to initiate an API connection, `["::/0"]` by default |
 |`bastion_allowed_ports` | List of ports to open on bastion node, `[]` by default |
+|`bastion_allowed_ports_ipv6` | List of ports to open on bastion node for IPv6 CIDR blocks, `[]` by default |
 |`k8s_allowed_remote_ips` | List of CIDR allowed to initiate a SSH connection, empty by default |
+|`k8s_allowed_remote_ips_ipv6` | List of IPv6 CIDR allowed to initiate a SSH connection, empty by default |
+|`k8s_allowed_egress_ipv6_ips` | List of IPv6 CIDRs allowed for egress traffic, `["::/0"]` by default |
 |`worker_allowed_ports` | List of ports to open on worker nodes, `[{ "protocol" = "tcp", "port_range_min" = 30000, "port_range_max" = 32767, "remote_ip_prefix" = "0.0.0.0/0"}]` by default |
+|`worker_allowed_ports_ipv6` | List of ports to open on worker nodes for IPv6 CIDR blocks, `[{ "protocol" = "tcp", "port_range_min" = 30000, "port_range_max" = 32767, "remote_ip_prefix" = "::/0"}]` by default |
 |`master_allowed_ports` | List of ports to open on master nodes, expected format is `[{ "protocol" = "tcp", "port_range_min" = 443, "port_range_max" = 443, "remote_ip_prefix" = "0.0.0.0/0"}]`, empty by default |
+|`master_allowed_ports_ipv6` | List of ports to open on master nodes for IPv6 CIDR blocks, expected format is `[{ "protocol" = "tcp", "port_range_min" = 443, "port_range_max" = 443, "remote_ip_prefix" = "::/0"}]`, empty by default |
 |`node_root_volume_size_in_gb` | Size of the root volume for nodes, 0 to use ephemeral storage |
 |`master_root_volume_size_in_gb` | Size of the root volume for masters, 0 to use ephemeral storage |
 |`master_volume_type` | Volume type of the root volume for control_plane, 'Default' by default |
@@ -290,6 +300,10 @@ For your cluster, edit `inventory/$CLUSTER/cluster.tfvars`.
 |`force_null_port_security` | Set `null` instead of `true` or `false` for `port_security`. `false` by default |
 |`k8s_nodes` | Map containing worker node definition, see explanation below |
 |`k8s_masters` | Map containing master node definition, see explanation for k8s_nodes and `sample-inventory/cluster.tfvars` |
+|`k8s_master_loadbalancer_enabled` | Enable and use an Octavia load balancer for the K8s master nodes |
+|`k8s_master_loadbalancer_listener_port` | Define via which port the K8s Api should be exposed. `6443` by default  |
+|`k8s_master_loadbalancer_server_port` | Define via which port the K8S api is available on the master nodes. `6443` by default |
+|`k8s_master_loadbalancer_public_ip` | Specify if an existing floating IP should be used for the load balancer. A new floating IP is assigned by default  |
 
 ##### k8s_nodes
 
@@ -304,7 +318,8 @@ k8s_nodes:
    node-name:
     az: string # Name of the AZ
     flavor: string # Flavor ID to use
-    floating_ip: bool # If floating IPs should be created or not
+    floating_ip: bool # If floating IPs should be used or not
+    reserved_floating_ip: string # If floating_ip is true use existing floating IP, if reserved_floating_ip is an empty string and floating_ip is true, a new floating IP will be created
     extra_groups: string # (optional) Additional groups to add for kubespray, defaults to no groups
     image_id: string # (optional) Image ID to use, defaults to var.image_id or var.image
     root_volume_size_in_gb: number # (optional) Size of the block storage to use as root disk, defaults to var.node_root_volume_size_in_gb or to use volume from flavor otherwise
@@ -606,10 +621,10 @@ Edit `inventory/$CLUSTER/group_vars/k8s_cluster/k8s_cluster.yml`:
 
 - Set variable **kube_network_plugin** to your desired networking plugin.
   - **flannel** works out-of-the-box
-  - **calico** requires [configuring OpenStack Neutron ports](/docs/openstack.md) to allow service and pod subnets
+  - **calico** requires [configuring OpenStack Neutron ports](/docs/cloud_controllers/openstack.md) to allow service and pod subnets
 
 ```yml
-# Choose network plugin (calico, weave or flannel)
+# Choose network plugin (calico or flannel)
 # Can also be set to 'cloud', which lets the cloud provider setup appropriate routing
 kube_network_plugin: flannel
 ```

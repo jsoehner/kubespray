@@ -1,40 +1,30 @@
 ---
-.build:
+pipeline-image:
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - image-cache
+  tags:
+    - ffci
   stage: build
-  image:
-    name: moby/buildkit:rootless
-    entrypoint: [""]
+  image: moby/buildkit:rootless
   variables:
     BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+    CACHE_IMAGE: $CI_REGISTRY_IMAGE/pipeline:cache
+  # TODO: remove the override
+  # currently rebase.sh depends on bash (not available in the kaniko image)
+  # once we have a simpler rebase (which should be easy if the target branch ref is available as variable
+  # we'll be able to rebase here as well hopefully
   before_script:
-    - mkdir ~/.docker
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > ~/.docker/config.json
-
-pipeline image:
-  extends: .build
+    - mkdir -p ~/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" > ~/.docker/config.json
   script:
     - |
       buildctl-daemonless.sh build \
-        --frontend=dockerfile.v0 \
-        --local context=. \
-        --local dockerfile=. \
-        --opt filename=./pipeline.Dockerfile \
-        --output type=image,name=$PIPELINE_IMAGE,push=true \
-        --import-cache type=registry,ref=$CI_REGISTRY_IMAGE/pipeline:cache
-  rules:
-    - if: '$CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH'
-
-pipeline image and build cache:
-  extends: .build
-  script:
-    - |
-      buildctl-daemonless.sh build \
-        --frontend=dockerfile.v0 \
-        --local context=. \
-        --local dockerfile=. \
-        --opt filename=./pipeline.Dockerfile \
-        --output type=image,name=$PIPELINE_IMAGE,push=true \
-        --import-cache type=registry,ref=$CI_REGISTRY_IMAGE/pipeline:cache \
-        --export-cache type=registry,ref=$CI_REGISTRY_IMAGE/pipeline:cache,mode=max
-  rules:
-    - if: '$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH'
+        --frontend dockerfile.v0 \
+        --local context=$CI_PROJECT_DIR \
+        --local dockerfile=$CI_PROJECT_DIR \
+        --opt filename=pipeline.Dockerfile \
+        --export-cache type=registry,ref=$CACHE_IMAGE \
+        --import-cache type=registry,ref=$CACHE_IMAGE \
+        --output type=image,name=$PIPELINE_IMAGE,push=true
